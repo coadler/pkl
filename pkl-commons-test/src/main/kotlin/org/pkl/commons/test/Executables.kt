@@ -60,12 +60,13 @@ object Executables {
     val macAmd64: Path = executable("pkl-macos-amd64")
     val linuxAarch64: Path = executable("pkl-linux-aarch64")
     val linuxAmd64: Path = executable("pkl-linux-amd64")
+    val alpineAarch64: Path = executable("pkl-alpine-linux-aarch64")
     val alpineAmd64: Path = executable("pkl-alpine-linux-amd64")
     val windowsAmd64: Path = executable("pkl-windows-amd64.exe")
 
     // order (aarch64 before amd64, linux before alpine) affects [firstExisting]
     override val allNative: List<Path> =
-      listOf(macAarch64, macAmd64, linuxAarch64, linuxAmd64, alpineAmd64, windowsAmd64)
+      listOf(macAarch64, macAmd64, linuxAarch64, linuxAmd64, alpineAarch64, alpineAmd64, windowsAmd64)
   }
 
   object pkldoc : ExecutablePaths("pkl-doc") {
@@ -73,6 +74,7 @@ object Executables {
     val macAmd64: Path = executable("pkldoc-macos-amd64")
     val linuxAarch64: Path = executable("pkldoc-linux-aarch64")
     val linuxAmd64: Path = executable("pkldoc-linux-amd64")
+    val alpineAarch64: Path = executable("pkldoc-alpine-linux-aarch64")
     val alpineAmd64: Path = executable("pkldoc-alpine-linux-amd64")
     val windowsAmd64: Path = executable("pkldoc-windows-amd64.exe")
 
@@ -80,6 +82,6 @@ object Executables {
 
     // order (aarch64 before amd64, linux before alpine) affects [firstExisting]
     override val allNative: List<Path> =
-      listOf(macAarch64, macAmd64, linuxAarch64, linuxAmd64, alpineAmd64, windowsAmd64)
+      listOf(macAarch64, macAmd64, linuxAarch64, linuxAmd64, alpineAarch64, alpineAmd64, windowsAmd64)
   }
 }

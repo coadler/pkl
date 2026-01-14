@@ -383,7 +383,14 @@ jobs:
         fi
 
         # install musl
-        if [[ ! -f ~/staticdeps/bin/x86_64-linux-musl-gcc ]]; then
+        ARCH=$(uname -m)
+        if [[ "$ARCH" == "aarch64" ]]; then
+          MUSL_GCC_PATH=~/staticdeps/bin/aarch64-linux-musl-gcc
+        else
+          MUSL_GCC_PATH=~/staticdeps/bin/x86_64-linux-musl-gcc
+        fi
+
+        if [[ ! -f "$MUSL_GCC_PATH" ]]; then
           # Download musl tarball and signature
           curl -Lf "https://musl.libc.org/releases/musl-${MUSL_VERSION}.tar.gz" -o /tmp/musl.tar.gz
           curl -Lf "https://musl.libc.org/releases/musl-${MUSL_VERSION}.tar.gz.asc" -o /tmp/musl.tar.gz.asc
@@ -413,7 +420,7 @@ jobs:
           rm -rf "/tmp/dep_musl-${MUSL_VERSION}"
 
           # native-image expects to find an executable at this path.
-          ln -s ~/staticdeps/bin/musl-gcc ~/staticdeps/bin/x86_64-linux-musl-gcc
+          ln -s ~/staticdeps/bin/musl-gcc "$MUSL_GCC_PATH"
         fi
 
         echo "${HOME}/staticdeps/bin" >> "$GITHUB_PATH"
@@ -436,6 +443,122 @@ jobs:
       uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
         name: test-results-html-pkl-cli-alpine-linux-amd64-release
+        path: '**/build/reports/tests/**/*'
+        if-no-files-found: ignore
+  pkl-cli-alpine-linux-aarch64-release:
+    runs-on: ubuntu-24.04-arm
+    env:
+      LANG: en_US.UTF-8
+    steps:
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      with:
+        persist-credentials: false
+    - uses: actions/setup-java@f2beeb24e141e01a676f977032f5a29d81c9e27e # v5
+      with:
+        java-version: '21'
+        distribution: temurin
+        architecture: aarch64
+    - uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5
+      with: {}
+    - name: Install musl and zlib
+      run: |
+        set -e
+        mkdir -p ~/staticdeps/
+
+        ZLIB_VERSION="1.2.13"
+        MUSL_VERSION="1.2.5"
+
+        # install zlib
+        if [[ ! -f ~/staticdeps/include/zlib.h ]]; then
+          # Download zlib tarball and signature
+          curl -Lf "https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz" -o /tmp/zlib.tar.gz
+          curl -Lf "https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz.asc" -o /tmp/zlib.tar.gz.asc
+
+          # Import zlib GPG key
+          gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 5ED46A6721D365587791E2AA783FCD8E58BCAFBA
+
+          # Verify GPG signature
+          echo "Verifying zlib GPG signature..."
+          gpg --verify /tmp/zlib.tar.gz.asc /tmp/zlib.tar.gz
+
+          mkdir -p "/tmp/dep_zlib-${ZLIB_VERSION}"
+          cd "/tmp/dep_zlib-${ZLIB_VERSION}"
+          # shellcheck disable=SC2002
+          cat /tmp/zlib.tar.gz | tar --strip-components=1 -xzC .
+
+          echo "zlib-${ZLIB_VERSION}: configure..." 
+          ./configure --static --prefix="$HOME"/staticdeps > /dev/null
+
+          echo "zlib-${ZLIB_VERSION}: make..." 
+          make -s -j4
+
+          echo "zlib-${ZLIB_VERSION}: make install..." 
+          make -s install
+
+          rm -rf /tmp/dep_zlib-${ZLIB_VERSION}
+        fi
+
+        # install musl
+        ARCH=$(uname -m)
+        if [[ "$ARCH" == "aarch64" ]]; then
+          MUSL_GCC_PATH=~/staticdeps/bin/aarch64-linux-musl-gcc
+        else
+          MUSL_GCC_PATH=~/staticdeps/bin/x86_64-linux-musl-gcc
+        fi
+
+        if [[ ! -f "$MUSL_GCC_PATH" ]]; then
+          # Download musl tarball and signature
+          curl -Lf "https://musl.libc.org/releases/musl-${MUSL_VERSION}.tar.gz" -o /tmp/musl.tar.gz
+          curl -Lf "https://musl.libc.org/releases/musl-${MUSL_VERSION}.tar.gz.asc" -o /tmp/musl.tar.gz.asc
+
+          # Import musl GPG key
+          gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 836489290BB6B70F99FFDA0556BCDB593020450F
+
+          # Verify GPG signature
+          echo "Verifying musl GPG signature..."
+          gpg --verify /tmp/musl.tar.gz.asc /tmp/musl.tar.gz
+
+          mkdir -p "/tmp/dep_musl-${MUSL_VERSION}"
+          cd "/tmp/dep_musl-${MUSL_VERSION}"
+
+          # shellcheck disable=SC2002
+          cat /tmp/musl.tar.gz | tar --strip-components=1 -xzC .
+
+          echo "musl-${MUSL_VERSION}: configure..." 
+          ./configure --disable-shared --prefix="$HOME"/staticdeps > /dev/null
+
+          echo "musl-${MUSL_VERSION}: make..." 
+          make -s -j4
+
+          echo "musl-${MUSL_VERSION}: make install..." 
+          make -s install
+
+          rm -rf "/tmp/dep_musl-${MUSL_VERSION}"
+
+          # native-image expects to find an executable at this path.
+          ln -s ~/staticdeps/bin/musl-gcc "$MUSL_GCC_PATH"
+        fi
+
+        echo "${HOME}/staticdeps/bin" >> "$GITHUB_PATH"
+    - name: gradle buildNative
+      shell: bash
+      run: ./gradlew --info --stacktrace --no-daemon -DpklMultiJdkTesting=true -DreleaseBuild=true -Dpkl.musl=true pkl-cli:buildNative
+    - name: Upload executable artifacts
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      with:
+        name: executable-pkl-cli-alpine-linux-aarch64
+        path: pkl-cli*/build/executable/**/*
+    - name: Upload Test Result XML
+      if: '!cancelled()'
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      with:
+        name: test-results-xml-pkl-cli-alpine-linux-aarch64-release
+        path: '**/build/test-results/**/*.xml'
+    - name: Upload Test Result HTML
+      if: '!cancelled()'
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      with:
+        name: test-results-html-pkl-cli-alpine-linux-aarch64-release
         path: '**/build/reports/tests/**/*'
         if-no-files-found: ignore
   pkl-cli-windows-amd64-release:
@@ -691,7 +814,14 @@ jobs:
         fi
 
         # install musl
-        if [[ ! -f ~/staticdeps/bin/x86_64-linux-musl-gcc ]]; then
+        ARCH=$(uname -m)
+        if [[ "$ARCH" == "aarch64" ]]; then
+          MUSL_GCC_PATH=~/staticdeps/bin/aarch64-linux-musl-gcc
+        else
+          MUSL_GCC_PATH=~/staticdeps/bin/x86_64-linux-musl-gcc
+        fi
+
+        if [[ ! -f "$MUSL_GCC_PATH" ]]; then
           # Download musl tarball and signature
           curl -Lf "https://musl.libc.org/releases/musl-${MUSL_VERSION}.tar.gz" -o /tmp/musl.tar.gz
           curl -Lf "https://musl.libc.org/releases/musl-${MUSL_VERSION}.tar.gz.asc" -o /tmp/musl.tar.gz.asc
@@ -721,7 +851,7 @@ jobs:
           rm -rf "/tmp/dep_musl-${MUSL_VERSION}"
 
           # native-image expects to find an executable at this path.
-          ln -s ~/staticdeps/bin/musl-gcc ~/staticdeps/bin/x86_64-linux-musl-gcc
+          ln -s ~/staticdeps/bin/musl-gcc "$MUSL_GCC_PATH"
         fi
 
         echo "${HOME}/staticdeps/bin" >> "$GITHUB_PATH"
@@ -744,6 +874,122 @@ jobs:
       uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
         name: test-results-html-pkl-doc-alpine-linux-amd64-release
+        path: '**/build/reports/tests/**/*'
+        if-no-files-found: ignore
+  pkl-doc-alpine-linux-aarch64-release:
+    runs-on: ubuntu-24.04-arm
+    env:
+      LANG: en_US.UTF-8
+    steps:
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+      with:
+        persist-credentials: false
+    - uses: actions/setup-java@f2beeb24e141e01a676f977032f5a29d81c9e27e # v5
+      with:
+        java-version: '21'
+        distribution: temurin
+        architecture: aarch64
+    - uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5
+      with: {}
+    - name: Install musl and zlib
+      run: |
+        set -e
+        mkdir -p ~/staticdeps/
+
+        ZLIB_VERSION="1.2.13"
+        MUSL_VERSION="1.2.5"
+
+        # install zlib
+        if [[ ! -f ~/staticdeps/include/zlib.h ]]; then
+          # Download zlib tarball and signature
+          curl -Lf "https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz" -o /tmp/zlib.tar.gz
+          curl -Lf "https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/zlib-${ZLIB_VERSION}.tar.gz.asc" -o /tmp/zlib.tar.gz.asc
+
+          # Import zlib GPG key
+          gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 5ED46A6721D365587791E2AA783FCD8E58BCAFBA
+
+          # Verify GPG signature
+          echo "Verifying zlib GPG signature..."
+          gpg --verify /tmp/zlib.tar.gz.asc /tmp/zlib.tar.gz
+
+          mkdir -p "/tmp/dep_zlib-${ZLIB_VERSION}"
+          cd "/tmp/dep_zlib-${ZLIB_VERSION}"
+          # shellcheck disable=SC2002
+          cat /tmp/zlib.tar.gz | tar --strip-components=1 -xzC .
+
+          echo "zlib-${ZLIB_VERSION}: configure..." 
+          ./configure --static --prefix="$HOME"/staticdeps > /dev/null
+
+          echo "zlib-${ZLIB_VERSION}: make..." 
+          make -s -j4
+
+          echo "zlib-${ZLIB_VERSION}: make install..." 
+          make -s install
+
+          rm -rf /tmp/dep_zlib-${ZLIB_VERSION}
+        fi
+
+        # install musl
+        ARCH=$(uname -m)
+        if [[ "$ARCH" == "aarch64" ]]; then
+          MUSL_GCC_PATH=~/staticdeps/bin/aarch64-linux-musl-gcc
+        else
+          MUSL_GCC_PATH=~/staticdeps/bin/x86_64-linux-musl-gcc
+        fi
+
+        if [[ ! -f "$MUSL_GCC_PATH" ]]; then
+          # Download musl tarball and signature
+          curl -Lf "https://musl.libc.org/releases/musl-${MUSL_VERSION}.tar.gz" -o /tmp/musl.tar.gz
+          curl -Lf "https://musl.libc.org/releases/musl-${MUSL_VERSION}.tar.gz.asc" -o /tmp/musl.tar.gz.asc
+
+          # Import musl GPG key
+          gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 836489290BB6B70F99FFDA0556BCDB593020450F
+
+          # Verify GPG signature
+          echo "Verifying musl GPG signature..."
+          gpg --verify /tmp/musl.tar.gz.asc /tmp/musl.tar.gz
+
+          mkdir -p "/tmp/dep_musl-${MUSL_VERSION}"
+          cd "/tmp/dep_musl-${MUSL_VERSION}"
+
+          # shellcheck disable=SC2002
+          cat /tmp/musl.tar.gz | tar --strip-components=1 -xzC .
+
+          echo "musl-${MUSL_VERSION}: configure..." 
+          ./configure --disable-shared --prefix="$HOME"/staticdeps > /dev/null
+
+          echo "musl-${MUSL_VERSION}: make..." 
+          make -s -j4
+
+          echo "musl-${MUSL_VERSION}: make install..." 
+          make -s install
+
+          rm -rf "/tmp/dep_musl-${MUSL_VERSION}"
+
+          # native-image expects to find an executable at this path.
+          ln -s ~/staticdeps/bin/musl-gcc "$MUSL_GCC_PATH"
+        fi
+
+        echo "${HOME}/staticdeps/bin" >> "$GITHUB_PATH"
+    - name: gradle buildNative
+      shell: bash
+      run: ./gradlew --info --stacktrace --no-daemon -DpklMultiJdkTesting=true -DreleaseBuild=true -Dpkl.musl=true pkl-doc:buildNative
+    - name: Upload executable artifacts
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      with:
+        name: executable-pkl-doc-alpine-linux-aarch64
+        path: pkl-doc*/build/executable/**/*
+    - name: Upload Test Result XML
+      if: '!cancelled()'
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      with:
+        name: test-results-xml-pkl-doc-alpine-linux-aarch64-release
+        path: '**/build/test-results/**/*.xml'
+    - name: Upload Test Result HTML
+      if: '!cancelled()'
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      with:
+        name: test-results-html-pkl-doc-alpine-linux-aarch64-release
         path: '**/build/reports/tests/**/*'
         if-no-files-found: ignore
   pkl-doc-windows-amd64-release:
@@ -795,12 +1041,14 @@ jobs:
     - pkl-cli-macOS-aarch64-release
     - pkl-cli-linux-aarch64-release
     - pkl-cli-alpine-linux-amd64-release
+    - pkl-cli-alpine-linux-aarch64-release
     - pkl-cli-windows-amd64-release
     - pkl-doc-macOS-amd64-release
     - pkl-doc-linux-amd64-release
     - pkl-doc-macOS-aarch64-release
     - pkl-doc-linux-aarch64-release
     - pkl-doc-alpine-linux-amd64-release
+    - pkl-doc-alpine-linux-aarch64-release
     - pkl-doc-windows-amd64-release
     runs-on: ubuntu-latest
     env:
@@ -869,12 +1117,14 @@ jobs:
     - pkl-cli-macOS-aarch64-release
     - pkl-cli-linux-aarch64-release
     - pkl-cli-alpine-linux-amd64-release
+    - pkl-cli-alpine-linux-aarch64-release
     - pkl-cli-windows-amd64-release
     - pkl-doc-macOS-amd64-release
     - pkl-doc-linux-amd64-release
     - pkl-doc-macOS-aarch64-release
     - pkl-doc-linux-aarch64-release
     - pkl-doc-alpine-linux-amd64-release
+    - pkl-doc-alpine-linux-aarch64-release
     - pkl-doc-windows-amd64-release
     permissions:
       checks: write
@@ -909,12 +1159,14 @@ jobs:
     - pkl-cli-macOS-aarch64-release
     - pkl-cli-linux-aarch64-release
     - pkl-cli-alpine-linux-amd64-release
+    - pkl-cli-alpine-linux-aarch64-release
     - pkl-cli-windows-amd64-release
     - pkl-doc-macOS-amd64-release
     - pkl-doc-linux-amd64-release
     - pkl-doc-macOS-aarch64-release
     - pkl-doc-linux-aarch64-release
     - pkl-doc-alpine-linux-amd64-release
+    - pkl-doc-alpine-linux-aarch64-release
     - pkl-doc-windows-amd64-release
     - deploy-release
     - github-release

@@ -338,6 +338,11 @@ class AlpineLanguageSnippetTestsEngine : AbstractNativeLanguageSnippetTestsEngin
   override val testClass: KClass<*> = AlpineLanguageSnippetTests::class
 }
 
+class AlpineAarch64LanguageSnippetTestsEngine : AbstractNativeLanguageSnippetTestsEngine() {
+  override val pklExecutablePath: Path = Executables.pkl.alpineAarch64
+  override val testClass: KClass<*> = AlpineLanguageSnippetTests::class
+}
+
 private val windowsExcludedTests
   get() =
     listOf(

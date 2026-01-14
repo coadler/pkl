@@ -35,7 +35,14 @@ if [[ ! -f ~/staticdeps/include/zlib.h ]]; then
 fi
 
 # install musl
-if [[ ! -f ~/staticdeps/bin/x86_64-linux-musl-gcc ]]; then
+ARCH=$(uname -m)
+if [[ "$ARCH" == "aarch64" ]]; then
+  MUSL_GCC_PATH=~/staticdeps/bin/aarch64-linux-musl-gcc
+else
+  MUSL_GCC_PATH=~/staticdeps/bin/x86_64-linux-musl-gcc
+fi
+
+if [[ ! -f "$MUSL_GCC_PATH" ]]; then
   # Download musl tarball and signature
   curl -Lf "https://musl.libc.org/releases/musl-${MUSL_VERSION}.tar.gz" -o /tmp/musl.tar.gz
   curl -Lf "https://musl.libc.org/releases/musl-${MUSL_VERSION}.tar.gz.asc" -o /tmp/musl.tar.gz.asc
@@ -65,7 +72,7 @@ if [[ ! -f ~/staticdeps/bin/x86_64-linux-musl-gcc ]]; then
   rm -rf "/tmp/dep_musl-${MUSL_VERSION}"
 
   # native-image expects to find an executable at this path.
-  ln -s ~/staticdeps/bin/musl-gcc ~/staticdeps/bin/x86_64-linux-musl-gcc
+  ln -s ~/staticdeps/bin/musl-gcc "$MUSL_GCC_PATH"
 fi
 
 echo "${HOME}/staticdeps/bin" >> "$GITHUB_PATH"

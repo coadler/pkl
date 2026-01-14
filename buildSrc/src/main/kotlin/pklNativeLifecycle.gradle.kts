@@ -23,6 +23,8 @@ val assembleNativeLinuxAmd64 by tasks.registering { group = "build" }
 
 val assembleNativeAlpineLinuxAmd64 by tasks.registering { group = "build" }
 
+val assembleNativeAlpineLinuxAarch64 by tasks.registering { group = "build" }
+
 val assembleNativeWindowsAmd64 by tasks.registering { group = "build" }
 
 val testNativeMacOsAarch64 by tasks.registering { group = "verification" }
@@ -34,6 +36,8 @@ val testNativeLinuxAarch64 by tasks.registering { group = "verification" }
 val testNativeLinuxAmd64 by tasks.registering { group = "verification" }
 
 val testNativeAlpineLinuxAmd64 by tasks.registering { group = "verification" }
+
+val testNativeAlpineLinuxAarch64 by tasks.registering { group = "verification" }
 
 val testNativeWindowsAmd64 by tasks.registering { group = "verification" }
 
@@ -60,7 +64,8 @@ val assembleNative by
         wraps(assembleNativeMacOsAmd64)
       }
       buildInfo.os.isLinux && buildInfo.targetArch == "aarch64" -> {
-        wraps(assembleNativeLinuxAarch64)
+        if (buildInfo.musl) wraps(assembleNativeAlpineLinuxAarch64)
+        else wraps(assembleNativeLinuxAarch64)
       }
       buildInfo.os.isLinux && buildInfo.targetArch == "amd64" -> {
         if (buildInfo.musl) wraps(assembleNativeAlpineLinuxAmd64)
@@ -96,7 +101,8 @@ val testNative by
         dependsOn(testNativeMacOsAmd64)
       }
       buildInfo.os.isLinux && buildInfo.targetArch == "aarch64" -> {
-        dependsOn(testNativeLinuxAarch64)
+        if (buildInfo.musl) dependsOn(testNativeAlpineLinuxAarch64)
+        else dependsOn(testNativeLinuxAarch64)
       }
       buildInfo.os.isLinux && buildInfo.targetArch == "amd64" -> {
         if (buildInfo.musl) dependsOn(testNativeAlpineLinuxAmd64)

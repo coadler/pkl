@@ -66,6 +66,12 @@ val testAlpineExecutableAmd64 by
     configureNativeTest()
   }
 
+val testAlpineExecutableAarch64 by
+  tasks.registering(Test::class) {
+    dependsOn(":pkl-cli:alpineExecutableAarch64")
+    configureNativeTest()
+  }
+
 val testWindowsExecutableAmd64 by
   tasks.registering(Test::class) {
     dependsOn(":pkl-cli:windowsExecutableAmd64")
@@ -81,5 +87,7 @@ tasks.testNativeLinuxAarch64 { dependsOn(testLinuxExecutableAarch64) }
 tasks.testNativeLinuxAmd64 { dependsOn(testLinuxExecutableAmd64) }
 
 tasks.testNativeAlpineLinuxAmd64 { dependsOn(testAlpineExecutableAmd64) }
+
+tasks.testNativeAlpineLinuxAarch64 { dependsOn(testAlpineExecutableAarch64) }
 
 tasks.testNativeWindowsAmd64 { dependsOn(testWindowsExecutableAmd64) }
