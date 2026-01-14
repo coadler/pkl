@@ -17,6 +17,9 @@ extraGradleArgs {
   when (musl) {
     "-Dpkl.musl=true"
   }
+  when (musl && arch == "aarch64") {
+    "-Dpkl.native--native-compiler-path=aarch64-linux-musl-gcc"
+  }
 }
 
 preSteps {
