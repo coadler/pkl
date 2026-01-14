@@ -542,7 +542,7 @@ jobs:
         echo "${HOME}/staticdeps/bin" >> "$GITHUB_PATH"
     - name: gradle buildNative
       shell: bash
-      run: ./gradlew --info --stacktrace --no-daemon -DpklMultiJdkTesting=true -Dpkl.musl=true -Dpkl.native--native-compiler-path=aarch64-linux-musl-gcc pkl-cli:buildNative
+      run: ./gradlew --info --stacktrace --no-daemon -DpklMultiJdkTesting=true -Dpkl.musl=true -Dpkl.native--native-compiler-path=$HOME/staticdeps/bin/aarch64-linux-musl-gcc pkl-cli:buildNative
     - name: Upload executable artifacts
       uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:
@@ -973,7 +973,7 @@ jobs:
         echo "${HOME}/staticdeps/bin" >> "$GITHUB_PATH"
     - name: gradle buildNative
       shell: bash
-      run: ./gradlew --info --stacktrace --no-daemon -DpklMultiJdkTesting=true -Dpkl.musl=true -Dpkl.native--native-compiler-path=aarch64-linux-musl-gcc pkl-doc:buildNative
+      run: ./gradlew --info --stacktrace --no-daemon -DpklMultiJdkTesting=true -Dpkl.musl=true -Dpkl.native--native-compiler-path=$HOME/staticdeps/bin/aarch64-linux-musl-gcc pkl-doc:buildNative
     - name: Upload executable artifacts
       uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
       with:

@@ -18,7 +18,7 @@ extraGradleArgs {
     "-Dpkl.musl=true"
   }
   when (musl && arch == "aarch64") {
-    "-Dpkl.native--native-compiler-path=aarch64-linux-musl-gcc"
+    "-Dpkl.native--native-compiler-path=$HOME/staticdeps/bin/aarch64-linux-musl-gcc"
   }
 }
 
