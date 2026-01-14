@@ -139,6 +139,8 @@ val alpineExecutableAarch64 by
     aarch64()
     setClasspath()
     extraNativeImageArgs.addAll(listOf("--static", "--libc=musl"))
+    // Ensure compatibility for kernels with page size set to 4k, 16k and 64k
+    // (e.g. Raspberry Pi 5, Asahi Linux)
     extraNativeImageArgs.add("-H:PageSize=65536")
   }
 
